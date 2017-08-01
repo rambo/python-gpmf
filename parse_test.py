@@ -100,3 +100,14 @@ def recursive_print(input):
             recursive_print(x)
     except KeyError as e:
         pass
+
+
+if __name__ == '__main__':
+    import sys
+    parser = hachoir.parser.createParser(sys.argv[1])
+    with open(sys.argv[2], 'wb') as fp:
+        fp.write(
+            get_payloads(
+                find_gpmd_stbl_atom(parser)
+            )
+        )
