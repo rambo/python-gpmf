@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import hachoir.parser
-
 from hachoir.field import MissingField
 from hachoir.field.string_field import String
 
@@ -45,7 +44,7 @@ def get_payloads(stbl):
             if idx == 0 and idx2 == 0:
                 sampletimes = (0, sample_delta)
             else:
-                sampletimes = (timestamps[-1][1], timestamps[-1][1]+sample_delta)
+                sampletimes = (timestamps[-1][1], timestamps[-1][1] + sample_delta)
             timestamps.append(sampletimes)
 
     # Read chunks, yield with timing data
@@ -53,7 +52,7 @@ def get_payloads(stbl):
     for idx in range(num_samples):
         offset = stco["chunk_offset[{}]".format(idx)].value
         size = stsz["sample_size[{}]".format(idx)].value
-        data = stbl.stream.read(offset*8, size*8)[1]
+        data = stbl.stream.read(offset * 8, size * 8)[1]
         yield (data, timestamps[idx])
 
 
@@ -87,7 +86,7 @@ def find_gpmd_minf_atom(parser):
             subtype = atom['hdlr/subtype']
             if subtype.value == 'meta':
                 meta_atom = atom.parent
-                #print(meta_atom)
+                # print(meta_atom)
                 for subatom in meta_atom:
                     tag = subatom['tag']
                     if tag.value != 'minf':
