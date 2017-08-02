@@ -1,3 +1,2 @@
-hachoir3==3.0a2
-
+https://github.com/rambo/hachoir3/archive/3.0a2-rambo.zip
 
