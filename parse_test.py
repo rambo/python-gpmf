@@ -6,13 +6,6 @@ import hachoir.parser
 from hachoir.field import MissingField
 from hachoir.field.string_field import String
 
-def get_file_metadata(filepath):
-    """Parse and extract metadata with hachoir"""
-    parser = hachoir.parser.createParser(filepath)
-    with parser:
-        md = hachoir.metadata.extractMetadata(parser)
-    return md
-
 
 def get_raw_content(met):
     """Reads the raw bytes from the stream for this atom/field"""
@@ -23,27 +16,43 @@ def get_raw_content(met):
     return stream.read(met.absolute_address, met.size)
 
 
-def get_stream_data(stbl):
-    """Get raw payload(s) from stbl atom offsets"""
-    ret_bytes = b''
+def get_payloads(stbl):
+    """Get payloads by chunk from stbl, with timing info"""
+    # Locate needed subatoms
     for subatom in stbl:
         tag = subatom['tag']
         if tag.value == 'stsz':
-            stsz = subatom
+            stsz = subatom['stsz']
         if tag.value == 'stco':
-            stco = subatom
-    num_samples = stsz['stsz/count'].value
-    expected_size = 0
-    read_size = 0
-    for x in range(num_samples):
-        offset = stco["stco/chunk_offset[{}]".format(x)].value
-        size = stsz["stsz/sample_size[{}]".format(x)].value
-        expected_size += size
-        resp = stbl.stream.read(offset*8, size*8)
-        #print("Chunk {} offset: {}, size: {}, resp[0]: {}, resp[2]: {}".format(x, offset, size, resp[0], resp[2]))
-        read_size += len(resp[1])
-        ret_bytes += resp[1]
-    #print("Calculated size: {}, read_size: {}, len(ret_bytes): {}".format(expected_size, read_size, len(ret_bytes)))
+            stco = subatom['stco']
+        if tag.value == 'stts':
+            stts = subatom['stts']
+
+    # Generate start and end timestamps for all chunks
+    timestamps = []
+    for idx in range(stts['count'].value):
+        sample_delta = stts["sample_delta[{}]".format(idx)].value
+        for idx2 in range(stts["sample_count[{}]".format(idx)].value):
+            if idx == 0 and idx2 == 0:
+                sampletimes = (0, sample_delta)
+            else:
+                sampletimes = (timestamps[-1][1], timestamps[-1][1]+sample_delta)
+            timestamps.append(sampletimes)
+
+    # Read chunks, yield with timing data
+    num_samples = stsz['count'].value
+    for idx in range(num_samples):
+        offset = stco["chunk_offset[{}]".format(idx)].value
+        size = stsz["sample_size[{}]".format(idx)].value
+        data = stbl.stream.read(offset*8, size*8)[1]
+        yield (data, timestamps[idx])
+
+
+def get_stream_data(stbl):
+    """Get raw payload bytes from stbl atom offsets"""
+    ret_bytes = b''
+    for payload in get_payloads(stbl):
+        ret_bytes += payload[0]
     return ret_bytes
 
 
