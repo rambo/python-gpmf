@@ -33,11 +33,17 @@ def get_payloads(stbl):
         if tag.value == 'stco':
             stco = subatom
     num_samples = stsz['stsz/count'].value
+    expected_size = 0
+    read_size = 0
     for x in range(num_samples):
         offset = stco["stco/chunk_offset[{}]".format(x)].value
         size = stsz["stsz/sample_size[{}]".format(x)].value
-        resp = stbl.stream.read(offset, size)
+        expected_size += size
+        resp = stbl.stream.read(offset*8, size*8)
+        #print("Chunk {} offset: {}, size: {}, resp[0]: {}, resp[2]: {}".format(x, offset, size, resp[0], resp[2]))
+        read_size += len(resp[1])
         ret_bytes += resp[1]
+    #print("Calculated size: {}, read_size: {}, len(ret_bytes): {}".format(expected_size, read_size, len(ret_bytes)))
     return ret_bytes
 
 
