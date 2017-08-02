@@ -23,7 +23,7 @@ def get_raw_content(met):
     return stream.read(met.absolute_address, met.size)
 
 
-def get_payloads(stbl):
+def get_stream_data(stbl):
     """Get raw payload(s) from stbl atom offsets"""
     ret_bytes = b''
     for subatom in stbl:
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     parser = hachoir.parser.createParser(sys.argv[1])
     with open(sys.argv[2], 'wb') as fp:
         fp.write(
-            get_payloads(
+            get_stream_data(
                 find_gpmd_stbl_atom(parser)
             )
         )
