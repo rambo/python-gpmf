@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import hachoir.metadata
 import hachoir.parser
-
 
 from hachoir.field import MissingField
 from hachoir.field.string_field import String
@@ -14,6 +12,17 @@ def get_raw_content(met):
     else:
         stream = met.parent.stream
     return stream.read(met.absolute_address, met.size)
+
+
+def get_gpmf_payloads_from_file(filepath):
+    """Get payloads from file, returns a tuple with the payloads iterator and the parser instance"""
+    parser = hachoir.parser.createParser(filepath)
+    return (get_payloads(find_gpmd_stbl_atom(parser)), parser)
+
+
+def get_gpmf_payloads(parser):
+    """Shorthand for finding the GPMF atom to be passed to get_payloads"""
+    return get_payloads(find_gpmd_stbl_atom(parser))
 
 
 def get_payloads(stbl):
