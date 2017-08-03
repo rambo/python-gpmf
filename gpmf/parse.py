@@ -1,5 +1,4 @@
-# TODO: Implement GPMF parsing
-#   see https://github.com/gopro/gpmf-parser#gmfp-deeper-dive for format details
+"""Parses the FOURCC data in GPMF stream into fields"""
 import construct
 
 TYPES = construct.Enum(
@@ -32,5 +31,14 @@ FOURCC = construct.Struct(
     "data" / construct.Aligned(4, construct.Bytes(construct.this.size * construct.this.repeat))
 )
 
-def recursive():
-    pass
+
+def recursive(data, parents=tuple()):
+    """Recursive parser returns depth-first traversing generator yielding fields and list of their parent keys"""
+    elements = FOURCC[:].parse(data)
+    for element in elements:
+        if element.type == 0:
+            subparents = parents + (element.key,)
+            for subyield in recursive(element.data, subparents):
+                yield subyield
+        else:
+            yield (element, parents)
