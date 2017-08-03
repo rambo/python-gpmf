@@ -3,7 +3,7 @@
 import construct
 
 TYPES = construct.Enum(
-    Byte,
+    construct.Byte,
     int8_t=ord(b'b'),
     uint8_t=ord(b'B'),
     char=ord(b'c'),
@@ -29,5 +29,8 @@ FOURCC = construct.Struct(
     "type" / construct.Byte,
     "size" / construct.Byte,
     "repeat" / construct.Int16ub,
-    "data" / construct.Aligned(4, construct.Bytes(this.size * this.repeat))
+    "data" / construct.Aligned(4, construct.Bytes(construct.this.size * construct.this.repeat))
 )
+
+def recursive():
+    pass
