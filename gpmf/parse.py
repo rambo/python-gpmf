@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Parses the FOURCC data in GPMF stream into fields"""
 import construct
 
@@ -42,3 +43,17 @@ def recursive(data, parents=tuple()):
                 yield subyield
         else:
             yield (element, parents)
+
+
+if __name__ == '__main__':
+    import sys
+    from extract import get_gpmf_payloads_from_file
+    payloads, parser = get_gpmf_payloads_from_file(sys.argv[1])
+    for gpmf_data, timestamps in payloads:
+        for element, parents in recursive(gpmf_data):
+            print("{} {} > {}: {}".format(
+                timestamps,
+                ' > '.join([x.decode('ascii') for x in parents]),
+                element.key.decode('ascii'),
+                element.data
+            ))
