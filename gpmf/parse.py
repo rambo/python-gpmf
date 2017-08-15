@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Parses the FOURCC data in GPMF stream into fields"""
+import struct
+
 import construct
 import dateutil.parser
 
@@ -37,7 +39,55 @@ FOURCC = construct.Struct(
 def parse_value(element):
     """Parses element value"""
     type_parsed = TYPES.parse(bytes([element.type]))
-    raise ValueError("{} does not have value parser yet".format(type_parsed))
+    struct_key = None
+
+    #print("DEBUG: type_parsed={}, element.repeat={}, element.size={}, len(element.data): {}".format(type_parsed, element.repeat, element.size, len(element.data)))
+
+    struct_repeat = element.repeat
+    if type_parsed == 'int32_t':
+        struct_key = 'l'
+        # It seems gopro is "creative" with grouped values and size vs repeat...
+        if element.size > 4:
+            struct_repeat = int(element.repeat * (element.size / 4))
+    if type_parsed == 'uint32_t':
+        struct_key = 'L'
+        if element.size > 4:
+            struct_repeat = int(element.repeat * (element.size / 4))
+
+    if type_parsed == 'int16_t':
+        struct_key = 'h'
+        if element.size > 2:
+            struct_repeat = int(element.repeat * (element.size / 2))
+    if type_parsed == 'uint16_t':
+        struct_key = 'H'
+        if element.size > 2:
+            struct_repeat = int(element.repeat * (element.size / 2))
+
+    if type_parsed == 'float':
+        struct_key = 'f'
+        if element.size > 4:
+            struct_repeat = int(element.repeat * (element.size / 4))
+
+    if not struct_key:
+        raise ValueError("{} does not have value parser yet".format(type_parsed))
+
+    struct_format = ">{}".format(''.join([struct_key for x in range(struct_repeat)]))
+    #print("DEBUG: struct_format={}".format(struct_format))
+    try:
+        value_parsed = struct.unpack(struct_format, element.data)
+    except struct.error as e:
+        #print("ERROR: {}".format(e))
+        #print("DEBUG: struct_format={}, data (len: {}) was: {}".format(struct_format, len(element.data), element.data))
+        raise ValueError("Struct unpack failed: {}".format(e))
+
+    # Single value
+    if len(value_parsed) == 1:
+        return value_parsed[0]
+    # Grouped values
+    if len(value_parsed) > element.repeat:
+        n = int(len(value_parsed) / element.repeat)
+        return [value_parsed[i:i + n] for i in range(0, len(value_parsed), n)]
+    return list(value_parsed)
 
 
 def parse_goprodate(element):
