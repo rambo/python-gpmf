@@ -39,10 +39,16 @@ FOURCC = construct.Struct(
 def parse_value(element):
     """Parses element value"""
     type_parsed = TYPES.parse(bytes([element.type]))
-    struct_key = None
-
     #print("DEBUG: type_parsed={}, element.repeat={}, element.size={}, len(element.data): {}".format(type_parsed, element.repeat, element.size, len(element.data)))
 
+    # Special cases
+    if type_parsed == 'char' and element.key == b'GPSU':
+        return parse_goprodate(element)
+    if type_parsed == 'utcdate':
+        return parse_goprodate(element)
+
+    # Basic number types
+    struct_key = None
     struct_repeat = element.repeat
     if type_parsed == 'int32_t':
         struct_key = 'l'
@@ -122,10 +128,7 @@ if __name__ == '__main__':
     for gpmf_data, timestamps in payloads:
         for element, parents in recursive(gpmf_data):
             try:
-                if element.key == b'GPSU':
-                    value = parse_goprodate(element)
-                else:
-                    value = parse_value(element)
+                value = parse_value(element)
             except ValueError:
                 value = element.data
             print("{} {} > {}: {}".format(
