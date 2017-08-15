@@ -27,7 +27,7 @@ def locate_fields_by_subpath(parser, subpath):
     return recursive_search(parser)
 
 
-def fix_file_timestamp(filepath, overwrite=False):
+def fix_file_timestamp(filepath, overwrite=False, sanity_year=None):
     """Fixed mp4 file metadata timestamps to GPS clock (if available)"""
     newpath = filepath + '.new'
     payloads, parser = gpmf.extract.get_gpmf_payloads_from_file(filepath)
@@ -46,6 +46,11 @@ def fix_file_timestamp(filepath, overwrite=False):
     if not starttime:
         print("ERROR: No GPS fix/time found")
         return False
+
+    if sanity_year:
+        if sanity_year != starttime.year:
+            print("ERROR: Sanity mismatch {} != {}".format(starttime.year, sanity_year))
+            return False
 
     # We happen to know this is always in UTC so we can just drop the tzinfo
     starttime_naive = starttime.replace(tzinfo=None)
@@ -80,6 +85,10 @@ if __name__ == '__main__':
     overwrite = False
     if len(sys.argv) > 2:
         overwrite = bool(int(sys.argv[2]))
-    result = fix_file_timestamp(sys.argv[1], overwrite)
+    sanity_year = None
+    if len(sys.argv) > 3:
+        sanity_year = int(sys.argv[3])
+
+    result = fix_file_timestamp(sys.argv[1], overwrite, sanity_year)
     if not result:
         sys.exit(1)
