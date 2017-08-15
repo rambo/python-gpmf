@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Parses the FOURCC data in GPMF stream into fields"""
 import construct
+import dateutil.parser
 
 TYPES = construct.Enum(
     construct.Byte,
@@ -33,6 +34,25 @@ FOURCC = construct.Struct(
 )
 
 
+def parse_value(element):
+    """Parses element value"""
+    type_parsed = TYPES.parse(bytes([element.type]))
+    raise ValueError("{} does not have value parser yet".format(type_parsed))
+
+
+def parse_goprodate(element):
+    """Parses the gopro date string from element to Python datetime"""
+    goprotime = element.data.decode('UTF-8')
+    return dateutil.parser.parse("{}-{}-{}T{}:{}:{}Z".format(
+        2000 + int(goprotime[:2]),  # years
+        int(goprotime[2:4]),        # months
+        int(goprotime[4:6]),        # days
+        int(goprotime[6:8]),        # hours
+        int(goprotime[8:10]),       # minutes
+        float(goprotime[10:])       # seconds
+    ))
+
+
 def recursive(data, parents=tuple()):
     """Recursive parser returns depth-first traversing generator yielding fields and list of their parent keys"""
     elements = FOURCC[:].parse(data)
@@ -51,9 +71,16 @@ if __name__ == '__main__':
     payloads, parser = get_gpmf_payloads_from_file(sys.argv[1])
     for gpmf_data, timestamps in payloads:
         for element, parents in recursive(gpmf_data):
+            try:
+                if element.key == b'GPSU':
+                    value = parse_goprodate(element)
+                else:
+                    value = parse_value(element)
+            except ValueError:
+                value = element.data
             print("{} {} > {}: {}".format(
                 timestamps,
                 ' > '.join([x.decode('ascii') for x in parents]),
                 element.key.decode('ascii'),
-                element.data
+                value
             ))
