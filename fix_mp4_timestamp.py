@@ -38,8 +38,14 @@ def fix_file_timestamp(filepath, overwrite=False, sanity_year=None):
         for element, parents in gpmf.parse.recursive(gpmf_data):
             if element.key == b'GPSF' and gpmf.parse.parse_value(element) > 0:
                 have_fix = True
+            if element.key == b'GPSF' and gpmf.parse.parse_value(element) < 2:
+                have_fix = False
             if have_fix and element.key == b'GPSU':
                 gpstime = gpmf.parse.parse_value(element)
+                # We have "fix" but the clock is not yet in sync
+                if sanity_year:
+                    if sanity_year != gpstime.year:
+                        continue
                 starttime = gpstime - datetime.timedelta(seconds=timestamps[0] / 1000)
                 break
 
