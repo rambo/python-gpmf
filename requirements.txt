@@ -1,3 +1,3 @@
-https://github.com/rambo/hachoir3/archive/3.0a2-rambo.zip
+https://github.com/rambo/hachoir3/archive/hotfix_302a_EditableTimestampMac32.zip#egg=hachoir3-3.0a2
 construct==2.8.12
 python-dateutil==2.6.1
